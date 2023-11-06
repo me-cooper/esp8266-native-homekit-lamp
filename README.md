@@ -1,4 +1,4 @@
-# esp8266-native-homekit-animation-lamp
+# esp8266-native-homekit-lamp
 A shelf just to put it down. :LOLESP8266 Native WS2812B Lamp
 
 Deswegen:
