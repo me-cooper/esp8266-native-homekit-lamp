@@ -58,14 +58,15 @@ CRGB      leds[NUM_LEDS];
 
 
 
-bool  lightbulbIsOn     = 0;
-int   currentBright     = 0;
-int   currentSat        = 0;
+bool  lightbulbIsOn     = false;
 int   currentHue        = 0;
+int   currentSat        = 0;
+int   currentBright     = 255;
 
 
 
 
+void updateLightbulb();
 
 /* ############################################################################################## */
 /* ---------------------------------------------------------------------------------------------- */
@@ -96,7 +97,6 @@ void loop() {
 
   EVERY_N_MILLISECONDS( 10 ) {
     homekit_loop();
-    updateLightbulb();
   }  
   
 }
@@ -114,27 +114,19 @@ void loop() {
 /* ############################################################################################## */
 
 void updateLightbulb() {
-  //Serial.println("Update Lightbulb");
+  //Serial.println("() => updateLightbulb()");
 
-  int updateHue     = 0;
-  int updateSat     = 0;
-  int updateBright  = 0;
+  int updateHue     = currentHue;
+  int updateSat     = currentSat;
+  int updateBright  = lightbulbIsOn ? currentBright : 0;
 
-  updateSat         = currentSat;
-  updateHue         = currentHue;
-  updateBright      = currentBright;
  
-  if(!lightbulbIsOn){
-    updateBright    = 0;
-  }
-
   for( int i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(updateHue, updateSat, updateBright); 
+    FastLED.show();
   }
 
-  FastLED.show();
 
- 
 }
 
 
@@ -166,28 +158,6 @@ extern "C" homekit_characteristic_t   lightbulb_hue;
 
 
 
-void my_homekit_setup() {
-  
-  /* ############################################################################################## */
-  /*                                      LIGHTBULD FUNCTIONS                                       */
-  /* ############################################################################################## */
-  
-  lightbulb_on.setter       = function_lightbulb_on;
-  lightbulb_bright.setter   = function_lightbulb_bright;
-  lightbulb_sat.setter      = function_lightbulb_sat;
-  lightbulb_hue.setter      = function_lightbulb_hue;
-
-  
-  arduino_homekit_setup(&accessory_config);
-
-}
-
-void homekit_loop() {  
-  arduino_homekit_loop();
-}
-
-
-
 /* ############################################################################################## */
 /* ---------------------------------------------------------------------------------------------- */
 /*                                                                                                */
@@ -201,9 +171,10 @@ void function_lightbulb_on(const homekit_value_t v) {
     bool isOn                       = v.bool_value;
     lightbulb_on.value.bool_value   = isOn;
 
-    lightbulbIsOn                   = isOn;
+    lightbulbIsOn                   = isOn ? true : false;
 
-    //Serial.println("LIGHTBULB ON" + String(lightbulbIsOn));
+    //Serial.println("LIGHTBULB ON / OFF " + String(lightbulbIsOn));
+    updateLightbulb();
 
 }
 
@@ -218,7 +189,8 @@ void function_lightbulb_bright(const homekit_value_t v) {
     int rgbBright                     = mapValue(bright);
     currentBright                     = rgbBright;
 
-    //Serial.println("LIGHTBULB BRIGHT" + String(bright) + " " + String(rgbBright));
+    //Serial.println("LIGHTBULB BRIGHT " + String(bright) + " " + String(rgbBright));
+    updateLightbulb();
     
 }
 
@@ -233,7 +205,8 @@ void function_lightbulb_sat(const homekit_value_t v) {
     int rgbSat                      = mapValue(sat);
     currentSat                      = rgbSat; 
    
-    //Serial.println("LIGHTBULB SAT" + String(sat));
+    //Serial.println("LIGHTBULB SAT " + String(sat));
+    updateLightbulb();
 
 }
 
@@ -248,6 +221,30 @@ void function_lightbulb_hue(const homekit_value_t v) {
     int rgbHue                      = mapValue(hue, 360);
     currentHue                      = rgbHue; 
 
-    //Serial.println("LIGHTBULB HUE" + String(hue));
+    //Serial.println("LIGHTBULB HUE " + String(hue));
+    updateLightbulb();
 
+}
+
+
+
+
+/* ############################################################################################## */
+/*                            Attach Lightbulb functions to accessory                             */
+/* ############################################################################################## */
+
+void my_homekit_setup() {
+  
+  lightbulb_on.setter       = function_lightbulb_on;
+  lightbulb_bright.setter   = function_lightbulb_bright;
+  lightbulb_sat.setter      = function_lightbulb_sat;
+  lightbulb_hue.setter      = function_lightbulb_hue;
+  
+  arduino_homekit_setup(&accessory_config);
+
+}
+
+
+void homekit_loop() {  
+  arduino_homekit_loop();
 }
